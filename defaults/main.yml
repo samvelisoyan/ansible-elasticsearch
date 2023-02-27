@@ -38,11 +38,3 @@ elasticsearch_custom_configuration: []
 
 elasticsearch_https_proxy: http://proxy-prod-scl.svc.meshcore.net:3128
 elasticsearch_http_proxy: http://proxy-prod-scl.svc.meshcore.net:3128
-
-# systemd service can be managed servicetools through (require servicetools role dependency)
-elasticsearch_disable_service_managed_by_servicetools: false
-
-# disabling service is started on change
-elasticsearch_disable_auto_started_by_servicetools: false
-elasticsearch_servicetools_customer: elasticsearch
-elasticsearch_servicetools_service_name: elasticsearch

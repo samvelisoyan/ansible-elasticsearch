@@ -7,14 +7,6 @@
   when:
     - ansible_user_id == "root"
 
-- include: servicetools.yml
-  vars:
-    elasticsearch_service_name: "elasticsearch"
-  when:
-    - not elasticsearch_disable_service_managed_by_servicetools
-    - ansible_user_id == "root"
-    - not elasticsearch_disable_install or elasticsearch_instaled
-
 - include: config.yml
   when:
     - elasticsearch_create_config | bool
@@ -45,5 +37,4 @@
   when:
     - ansible_user_id == "root"
     - not elasticsearch_disable_install or elasticsearch_instaled
-    - elasticsearch_disable_service_managed_by_servicetools
     - not ansible_check_mode

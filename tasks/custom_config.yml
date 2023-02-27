@@ -83,39 +83,6 @@
   set_fact:
     custom_sysd_script: "{{ sysd_user_services_folder }}/{{ es_item.elasticsearch_service_name }}.service"
 
-- name: configure servicetools for elasticsearch
-  block:
-    - name: Servicetools | Set servicetools variables from elasticsearch data
-      set_fact:
-        elasticsearch_as_servicetools: >-
-          {{
-            { "services": {
-                es_item.elasticsearch_service_name: {
-                  "customer": elasticsearch_servicetools_customer,
-                  "resources": {
-                    "systemd_elasticsearch": {
-                      "params": custom_sysd_script,
-                      "priority": 10,
-                      "runas": "elasticsearch",
-                      "type": "systemd",
-                    }
-                  }
-                }
-              }
-            }
-          }}
-
-    - name: Servicetools | Pass variables to servicetools role
-      include_role:
-        name: servicetools
-      vars:
-        - servicetools_services:
-            "{{ elasticsearch_as_servicetools.services | default({}) }}"
-  when:
-    - not elasticsearch_disable_service_managed_by_servicetools
-    - ansible_user_id == "root"
-    - not elasticsearch_disable_install or elasticsearch_instaled
-
 - name: custom | set custom elasticsearch service name
   set_fact:
     custom_elasticsearch_service_name: "{{ es_item.elasticsearch_service_name }}"

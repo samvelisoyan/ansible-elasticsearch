@@ -2,8 +2,6 @@ Elastic Search
 =========
 
 An Ansible Role that installs and configures Elastic Search
-This service can be managed by servicetools resource
-
 
 Requirements
 ------------
@@ -17,7 +15,6 @@ Dependencies
 ------------
 
 This role automatically can install JAVA (java-11-openjdk)
-By default, the systemd services is managed servicetools through(requires servicetools role dependency)
 You(with good rights) can use 'users' role as a dependency, when it is required to create user accounts used by application (like 'elasticsearch' user)
 
 
@@ -53,8 +50,6 @@ Variables and Properties
 | elasticsearch_cluster_initial_master_nodes | False | *""* | Bootstrap the cluster using an initial set of master-eligible nodes |
 | elasticsearch_discovery_zen_no_master_block | False | *""* | controls what operations should be rejected when there is no active master(https://www.elastic.co/guide/en/elasticsearch/reference/6.8/modules-discovery-zen.html) for more info.
 | elasticsearch_discovery_zen_minimum_master_nodes | False | *""* | sets the minimum number of master eligible nodes that need to join a newly elected master in order for an election to complete and for the elected node to accept its mastership(https://www.elastic.co/guide/en/elasticsearch/reference/6.8/modules-discovery-zen.html) for more info. |
-| elasticsearch_disable_service_managed_by_servicetools | False | *false* | systemd service can be managed by servicetools systemd resource(as root user) |
-| elasticsearch_disable_auto_started_by_servicetools | False | *false* | systemd service can be automatically started or re-started by servicetools(as root user) |
 | elasticsearch_custom_configuration | False | *[]* | Helps to deploy multiple nodes to the same server |
 
 #### elasticsearch custom configuration
@@ -79,7 +74,7 @@ Each elasticsearch custom configuration files will be deployed under /etc/elasti
 | elasticsearch_cluster_initial_master_nodes | False | *""* | Bootstrap the cluster using an initial set of master-eligible nodes |
 | elasticsearch_discovery_zen_no_master_block | False | *""* | controls what operations should be rejected when there is no active master. |
 | elasticsearch_discovery_zen_minimum_master_nodes | False | *""* | sets the minimum number of master eligible nodes that need to join a newly elected master in order for an election to complete and for the elected node to accept its mastership. |
-| elasticsearch_service_name | true | *""* | ElasticSearch service name which will be used to configure elasticsearch service in servicetools and systemd |
+| elasticsearch_service_name | true | *""* | ElasticSearch service name which will be used to configure elasticsearch service in systemd |
 
 ### Role Vars file
 
@@ -144,13 +139,6 @@ elasticsearch_custom_configuration:
     elasticsearch_discovery_zen_minimum_master_nodes: ""
     elasticsearch_service_name: elasticsearch2
 
-# systemd service can be managed servicetools through (require servicetools role dependency)
-elasticsearch_disable_service_managed_by_servicetools: false
-
-# disabling service is started on change
-elasticsearch_disable_auto_started_by_servicetools: false
-elasticsearch_servicetools_customer: elasticsearch
-elasticsearch_servicetools_service_name: elasticsearch
 ```
 
 Example Playbook

@@ -10,21 +10,6 @@
     state: restarted
   listen: "restart elasticsearch"
   when:
-    - elasticsearch_disable_service_managed_by_servicetools
-    - not elasticsearch_disable_install or elasticsearch_instaled
-    - not ansible_check_mode
-
-# Restart service through servicetools
-- name: "restart_service elasticsearch through servicetools"
-  become: yes
-  command: "restart_service {{ elasticsearch_servicetools_service_name }}"
-  register: cmd
-  failed_when: >
-    ("No valid service configuration found in" in cmd.stdout) or
-    ("FAILED" in cmd.stdout) or ("BROKEN" in cmd.stdout)
-  listen: "restart elasticsearch"
-  when:
-    - not elasticsearch_disable_service_managed_by_servicetools
     - not elasticsearch_disable_install or elasticsearch_instaled
     - not ansible_check_mode
 
@@ -34,19 +19,5 @@
     state: restarted
   listen: "restart custom_elasticsearch"
   when:
-    - elasticsearch_disable_service_managed_by_servicetools
-    - not elasticsearch_disable_install or elasticsearch_instaled
-    - not ansible_check_mode
-
-- name: "custom | restart_service elasticsearch through servicetools"
-  become: yes
-  command: "restart_service {{ custom_elasticsearch_service_name }}"
-  register: cmd
-  failed_when: >
-    ("No valid service configuration found in" in cmd.stdout) or
-    ("FAILED" in cmd.stdout) or ("BROKEN" in cmd.stdout)
-  listen: "restart custom_elasticsearch"
-  when:
-    - not elasticsearch_disable_service_managed_by_servicetools
     - not elasticsearch_disable_install or elasticsearch_instaled
     - not ansible_check_mode
