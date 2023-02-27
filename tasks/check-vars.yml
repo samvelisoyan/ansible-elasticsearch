@@ -1,0 +1,126 @@
+---
+- name: Get proxies settings from environment variables
+  set_fact:
+    elasticsearch_https_proxy: "{{ lookup('env', 'https_proxy') | default(elasticsearch_https_proxy, True) }}"
+    elasticsearch_http_proxy:  "{{ lookup('env', 'http_proxy')  | default(elasticsearch_http_proxy, True) }}"
+
+- name: Disabling proxies from elasticsearch data
+  set_fact:
+    elasticsearch_https_proxy: ""
+    elasticsearch_http_proxy:  ""
+  when: elasticsearch_disable_http_proxies
+
+- name: Gather package facts
+  package_facts:
+    manager: auto
+
+- name: Ensure that elasticsearch pakage not instaled
+  set_fact:
+    elasticsearch_instaled: false
+  when: elasticsearch_package not in ansible_facts.packages
+
+- name: Ensure that elasticsearch pakage instaled
+  set_fact:
+    elasticsearch_instaled: true
+  when: elasticsearch_package in ansible_facts.packages
+
+- name: Check vars | Java Package defined correctly
+  assert:
+    that:
+      - elasticsearch_app_java_package is match('^java-[\d|\.]+-openjdk$')
+    fail_msg: "{{ elasticsearch_app_java_package }} is NOT Java pakage"
+    success_msg: "{{ elasticsearch_app_java_package }} is Java pakage and will be installed"
+  when: elasticsearch_app_java_package is defined
+
+- name: Check vars | Set Java package version
+  set_fact:
+    elasticsearch_app_java_package: "{{ 'java-11-openjdk' if (ansible_distribution in ['RedHat','CentOS']) else 'openjdk-8-jdk' }}"
+  when: elasticsearch_app_java_package is not defined
+
+- name: "Check vars | elasticsearch_cluster_name is defined"
+  assert:
+    that:
+      - "elasticsearch_cluster_name is defined"
+    fail_msg: "elasticsearch_cluster_name must be defined when elasticsearch_enable_cluster is true"
+  when:
+    - elasticsearch_enable_cluster
+
+- name: "Check vars | elasticsearch_node_name is defined"
+  assert:
+    that:
+      - "elasticsearch_node_name is defined"
+    fail_msg: "elasticsearch_node_name must be defined when elasticsearch_enable_cluster is true"
+  when:
+    - elasticsearch_enable_cluster
+
+- name: "Check vars | elasticsearch_discovery_seed_hosts is defined"
+  assert:
+    that:
+      - "elasticsearch_discovery_seed_hosts is defined"
+    fail_msg: "elasticsearch_discovery_seed_hosts must be defined when elasticsearch_enable_cluster is true"
+  when:
+    - elasticsearch_enable_cluster
+
+- name: "Check vars | elasticsearch_cluster_initial_master_nodes is defined"
+  assert:
+    that:
+      - "elasticsearch_cluster_initial_master_nodes is defined"
+    fail_msg: "elasticsearch_cluster_initial_master_nodes must be defined when elasticsearch_enable_cluster is true"
+  when:
+    - elasticsearch_enable_cluster
+
+- name: "Check vars | elasticsearch_discovery_zen_no_master_block is defined"
+  assert:
+    that:
+      - "elasticsearch_discovery_zen_no_master_block is defined"
+    fail_msg: "elasticsearch_discovery_zen_no_master_block must be defined when elasticsearch_enable_cluster is true"
+  when:
+    - elasticsearch_enable_cluster
+
+- name: "Check vars | elasticsearch_discovery_zen_minimum_master_nodes is defined"
+  assert:
+    that:
+      - "elasticsearch_discovery_zen_minimum_master_nodes is defined"
+    fail_msg: "elasticsearch_discovery_zen_minimum_master_nodes must be defined when elasticsearch_enable_cluster is true"
+  when:
+    - elasticsearch_enable_cluster
+
+- name: "Check vars | elasticsearch custom config elasticsearch_log_dir defined corect"
+  assert:
+    that:
+      - "item.elasticsearch_log_dir != elasticsearch_log_dir"
+    fail_msg: "custom configuration can't be same as default"
+  with_items: "{{ elasticsearch_custom_configuration }}"
+  when:
+    - elasticsearch_custom_configuration is defined
+
+- name: "Check vars | elasticsearch custom config elasticsearch_data_dir defined corect"
+  assert:
+    that:
+      - "item.elasticsearch_data_dir != elasticsearch_data_dir"
+    fail_msg: "custom configuration can't be same as default"
+  with_items: "{{ elasticsearch_custom_configuration }}"
+  when:
+    - elasticsearch_custom_configuration is defined
+
+- name: "Check vars | elasticsearch custom config elasticsearch_http_port defined corect"
+  assert:
+    that:
+      - "item.elasticsearch_http_port != elasticsearch_http_port"
+    fail_msg: "custom configuration can't be same as default"
+  with_items: "{{ elasticsearch_custom_configuration }}"
+  when:
+    - elasticsearch_custom_configuration is defined
+
+- name: "Check vars | elasticsearch custom config elasticsearch_service_name defined corect"
+  assert:
+    that:
+      - "item.elasticsearch_service_name != 'elasticsearch'"
+    fail_msg: "custom configuration can't be same as default"
+  with_items: "{{ elasticsearch_custom_configuration }}"
+  when:
+    - elasticsearch_custom_configuration is defined
+
+- name: Set systemd user service script
+  set_fact:
+    sysd_script: "{{ sysd_user_services_folder }}/elasticsearch.service"

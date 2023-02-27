@@ -1,0 +1,36 @@
+---
+- name: Get list of installed plugins
+  command: >
+    ./bin/elasticsearch-plugin list
+    chdir={{ elasticsearch_home }}
+  register: elasticsearch_plugins_list
+  changed_when: false
+  when:
+    - not ansible_check_mode
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: Install configured plugins (disabling plugins install={{ elasticsearch_disable_install }})
+  command: >
+    ./bin/elasticsearch-plugin install {{ item }}
+    chdir={{ elasticsearch_home }}
+  with_items: "{{ elasticsearch_install_plugins }}"
+  when:
+    - not ansible_check_mode
+    - elasticsearch_plugins_list.stdout is defined
+    - item not in elasticsearch_plugins_list.stdout
+  notify:
+    - restart elasticsearch
+
+- name: Remove not listed plugins (disabling plugins remove={{ elasticsearch_disable_remove_plugin }})
+  command: >
+    ./bin/elasticsearch-plugin install {{ item }}
+    chdir={{ elasticsearch_home }}
+  with_items: "{{ elasticsearch_plugins_list.stdout }}"
+  when:
+    - not ansible_check_mode
+    - elasticsearch_plugins_list.stdout is defined
+    - item not in elasticsearch_install_plugins
+    - not elasticsearch_disable_remove_plugin
+    - not elasticsearch_disable_install or elasticsearch_instaled
+  notify:
+    - restart elasticsearch

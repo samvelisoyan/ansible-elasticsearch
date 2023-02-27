@@ -1,0 +1,31 @@
+---
+- name: Add Elasticsearch GPG key
+  rpm_key:
+    key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  environment:
+    - https_proxy: "{{ elasticsearch_https_proxy }}"
+    - http_proxy: "{{ elasticsearch_http_proxy }}"
+  when:
+    - not elasticsearch_disable_install
+
+- name: Add Logstash repository
+  template:
+    src: elasticsearch.repo.j2
+    dest: /etc/yum.repos.d/elasticsearch.repo
+    mode: 0644
+  when:
+    - not elasticsearch_disable_install
+
+- name: "Install {{ elasticsearch_app_java_package }} package (disabling package install={{ elasticsearch_disable_java_install }})"
+  action: >
+    {{ ansible_pkg_mgr }} name={{ elasticsearch_app_java_package }} state=present enablerepo={{ elasticsearch_app_enablerepo | default(omit,true) }}
+  when:
+    - not elasticsearch_disable_java_install
+
+- name: Install elasticsearch (disabling package install={{ elasticsearch_disable_install }})
+  action: >
+    {{ ansible_pkg_mgr }} name='{{ elasticsearch_package }}' state=present enablerepo={{ elasticsearch_enablerepo | default(omit,true) }}
+  when:
+    - not ansible_check_mode
+    - not elasticsearch_disable_install

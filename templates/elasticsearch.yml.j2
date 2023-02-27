@@ -1,0 +1,27 @@
+
+{% if elasticsearch_config is defined and elasticsearch_config | length %}
+{{ elasticsearch_config | to_nice_yaml(indent=2) }}
+{% endif %}
+
+{% if elasticsearch_enable_cluster %}
+cluster.name: {{ elasticsearch_cluster_name }}
+node.name: {{ elasticsearch_node_name }}
+discovery.seed_hosts: {{ elasticsearch_discovery_seed_hosts | to_json }}
+cluster.initial_master_nodes: {{ elasticsearch_cluster_initial_master_nodes | to_json }}
+discovery.zen.no_master_block: {{ elasticsearch_discovery_zen_no_master_block }}
+discovery.zen.minimum_master_nodes: {{ elasticsearch_discovery_zen_minimum_master_nodes }}
+{% else %}
+discovery.type: single-node
+{% endif %}
+
+network.host: {{ elasticsearch_listen_address }}
+http.port: {{ elasticsearch_http_port }}
+
+path.data: {{ elasticsearch_data_dir }}
+path.logs: {{ elasticsearch_log_dir }}
+
+{% if  elasticsearch_disable_action_auto_create_index %}
+action.auto_create_index: false
+{% else %}
+action.auto_create_index: true
+{% endif %}

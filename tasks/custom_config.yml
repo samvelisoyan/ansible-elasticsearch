@@ -1,0 +1,124 @@
+---
+- name: custom | set elasticsearch Config path
+  set_fact:
+    custom_elasticsearch_path_conf: "/etc/elasticsearch/es{{ index + 1 }}"
+
+- name: custom | Create Elasticsearch Directories
+  file:
+    path: "{{ dir_item }}"
+    state: directory
+    owner: "{{ elasticsearch_user }}"
+    group: "{{ elasticsearch_group }}"
+    mode: "2770"
+  with_items:
+    - "{{ es_item.elasticsearch_log_dir }}"
+    - "{{ es_item.elasticsearch_data_dir }}"
+  loop_control:
+    loop_var: dir_item
+  when:
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: custom | Create Elasticsearch Config Dir
+  file:
+    path: "{{ custom_elasticsearch_path_conf }}"
+    state: directory
+    owner: "root"
+    group: "{{ elasticsearch_group }}"
+    mode: "2770"
+  when:
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: custom | Copy jvm.options File
+  template:
+    src: "jvm.options.j2"
+    dest: "{{ custom_elasticsearch_path_conf }}/jvm.options"
+    owner: "root"
+    group: "{{ elasticsearch_group }}"
+    mode: "660"
+    force: yes
+  notify: restart custom_elasticsearch
+  vars:
+    elasticsearch_is_custom_config: true
+  when:
+    - elasticsearch_jvm_options_heap_size is defined
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: custom | Copy Configuration File
+  template:
+    src: custom_config/elasticsearch.yml.j2
+    dest: "{{ custom_elasticsearch_path_conf }}/elasticsearch.yml"
+    owner: root
+    group: "{{ elasticsearch_group }}"
+    mode: "660"
+    force: yes
+  notify: restart custom_elasticsearch
+  when:
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: custom | Copy log4j2.properties File
+  copy:
+    src: log4j2.properties
+    dest: "{{ custom_elasticsearch_path_conf }}/log4j2.properties"
+    owner: root
+    group: "{{ elasticsearch_group }}"
+    mode: "660"
+    force: yes
+  notify: restart custom_elasticsearch
+  when:
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: custom | Create systemd service for {{ es_item.elasticsearch_service_name }}
+  template:
+    src: custom_config/elasticsearch.service.j2
+    dest: "{{ sysd_user_services_folder }}/{{ es_item.elasticsearch_service_name }}.service"
+    owner: root
+    group: root
+    mode: "644"
+    force: yes
+  notify:
+    - reload systemd
+    - restart custom_elasticsearch
+
+- name: custom | set custom elasticsearch service name
+  set_fact:
+    custom_sysd_script: "{{ sysd_user_services_folder }}/{{ es_item.elasticsearch_service_name }}.service"
+
+- name: configure servicetools for elasticsearch
+  block:
+    - name: Servicetools | Set servicetools variables from elasticsearch data
+      set_fact:
+        elasticsearch_as_servicetools: >-
+          {{
+            { "services": {
+                es_item.elasticsearch_service_name: {
+                  "customer": elasticsearch_servicetools_customer,
+                  "resources": {
+                    "systemd_elasticsearch": {
+                      "params": custom_sysd_script,
+                      "priority": 10,
+                      "runas": "elasticsearch",
+                      "type": "systemd",
+                    }
+                  }
+                }
+              }
+            }
+          }}
+
+    - name: Servicetools | Pass variables to servicetools role
+      include_role:
+        name: servicetools
+      vars:
+        - servicetools_services:
+            "{{ elasticsearch_as_servicetools.services | default({}) }}"
+  when:
+    - not elasticsearch_disable_service_managed_by_servicetools
+    - ansible_user_id == "root"
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: custom | set custom elasticsearch service name
+  set_fact:
+    custom_elasticsearch_service_name: "{{ es_item.elasticsearch_service_name }}"
+
+- name: run handlers
+  meta: flush_handlers

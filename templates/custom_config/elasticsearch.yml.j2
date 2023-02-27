@@ -1,0 +1,26 @@
+
+{% if es_item.elasticsearch_config is defined and es_item.elasticsearch_config | length %}
+{{ es_item.elasticsearch_config | to_nice_yaml(indent=2) }}
+{% endif %}
+{% if es_item.elasticsearch_enable_cluster | default(false) %}
+cluster.name: {{ es_item.elasticsearch_cluster_name }}
+node.name: {{ es_item.elasticsearch_node_name }}
+discovery.seed_hosts: {{ es_item.elasticsearch_discovery_seed_hosts | to_json }}
+cluster.initial_master_nodes: {{ es_item.elasticsearch_cluster_initial_master_nodes | to_json }}
+discovery.zen.no_master_block: {{ es_item.elasticsearch_discovery_zen_no_master_block }}
+discovery.zen.minimum_master_nodes: {{ es_item.elasticsearch_discovery_zen_minimum_master_nodes }}
+{% else %}
+discovery.type: single-node
+{% endif %}
+
+network.host: {{ es_item.elasticsearch_listen_address }}
+http.port: {{ es_item.elasticsearch_http_port }}
+
+path.data: {{ es_item.elasticsearch_data_dir }}
+path.logs: {{ es_item.elasticsearch_log_dir }}
+
+{% if  es_item.elasticsearch_disable_action_auto_create_index | default(false) %}
+action.auto_create_index: false
+{% else %}
+action.auto_create_index: true
+{% endif %}

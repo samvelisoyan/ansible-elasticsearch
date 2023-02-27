@@ -1,0 +1,49 @@
+---
+- name: Checking vars tasks
+  import_tasks: check-vars.yml
+
+- name: Include setup tasks (requires user with root rights in order to run)
+  include: setup.yml
+  when:
+    - ansible_user_id == "root"
+
+- include: servicetools.yml
+  vars:
+    elasticsearch_service_name: "elasticsearch"
+  when:
+    - not elasticsearch_disable_service_managed_by_servicetools
+    - ansible_user_id == "root"
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- include: config.yml
+  when:
+    - elasticsearch_create_config | bool
+
+- include: plugins.yml
+  when:
+    - ansible_user_id == "root"
+    - not elasticsearch_disable_install or elasticsearch_instaled
+    - elasticsearch_custom_configuration is not defined
+
+- name: run handlers
+  meta: flush_handlers
+
+- include: custom_config.yml
+  loop_control:
+    loop_var: es_item
+    index_var: index
+  when:
+    - elasticsearch_custom_configuration is defined
+    - elasticsearch_create_config | bool
+  with_items: "{{ elasticsearch_custom_configuration }}"
+
+- name: Ensure elasticsearch is started and enabled at boot.
+  service:
+    name: elasticsearch
+    state: started
+    enabled: "{{ elasticsearch_enabled_on_boot }}"
+  when:
+    - ansible_user_id == "root"
+    - not elasticsearch_disable_install or elasticsearch_instaled
+    - elasticsearch_disable_service_managed_by_servicetools
+    - not ansible_check_mode

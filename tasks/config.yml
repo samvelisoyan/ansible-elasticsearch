@@ -1,0 +1,81 @@
+---
+- name: Get the installed java path
+  shell: >
+    set -o pipefail && \
+    update-alternatives --display java | grep '^/' | awk '{print $1}' | grep {{ elasticsearch_app_java_package }} | head -1
+  register: java_full_path
+  failed_when: False
+  changed_when: False
+  when:
+    - not elasticsearch_disable_java_install
+    - not ansible_check_mode
+
+- name: Get the installed java Home Path
+  shell: >
+    set -o pipefail && \
+    {{ java_full_path.stdout }} -XshowSettings:properties -version 2>&1 | grep 'java.home' | awk '{print $3}'
+  register: elasticsearch_java_home
+  failed_when: False
+  changed_when: False
+  when:
+    - not ansible_check_mode
+    - not elasticsearch_disable_java_install
+
+- name: Copy Elasticsearch Defaults File
+  template:
+    src: "elasticsearch.j2"
+    dest: "/etc/sysconfig/elasticsearch"
+    owner: root
+    group: "{{ elasticsearch_group }}"
+    mode: "660"
+    force: yes
+  notify: restart elasticsearch
+  when:
+    - not ansible_check_mode
+    - ansible_user_id == "root"
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: Copy jvm.options File
+  template:
+    src: "jvm.options.j2"
+    dest: "/etc/elasticsearch/jvm.options.d/jvm.options"
+    owner: "{{ elasticsearch_user }}"
+    group: "{{ elasticsearch_group }}"
+    mode: "660"
+    force: yes
+  notify: restart elasticsearch
+  vars:
+    elasticsearch_is_custom_config: false
+  when:
+    - not ansible_check_mode
+    - ansible_user_id == "root"
+    - elasticsearch_jvm_options_heap_size is defined
+    - not elasticsearch_disable_install or elasticsearch_instaled
+
+- name: Create Elasticsearch Directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ elasticsearch_user }}"
+    group: "{{ elasticsearch_group }}"
+    mode: "2750"
+  with_items:
+    - "{{ elasticsearch_log_dir }}"
+    - "{{ elasticsearch_data_dir }}"
+  when:
+    - not elasticsearch_disable_install or elasticsearch_instaled
+    - not ansible_check_mode
+
+- name: Copy Configuration File
+  template:
+    src: elasticsearch.yml.j2
+    dest: "/etc/elasticsearch/elasticsearch.yml"
+    owner: root
+    group: "{{ elasticsearch_group }}"
+    mode: "660"
+    force: yes
+  notify: restart elasticsearch
+  when:
+    - not ansible_check_mode
+    - ansible_user_id == "root"
+    - not elasticsearch_disable_install or elasticsearch_instaled
